@@ -54,7 +54,7 @@ trait SelectableChannel extends Channel {
 
 }
 
-final class SocketChannel private (override protected[channels] val channel: JSocketChannel)
+final class SocketChannel private[channels] (override protected[channels] val channel: JSocketChannel)
     extends SelectableChannel
     with GatheringByteChannel
     with ScatteringByteChannel {
@@ -99,10 +99,7 @@ final class SocketChannel private (override protected[channels] val channel: JSo
     IO.effect(Option(channel.getLocalAddress()).map(new SocketAddress(_)))
       .refineToOrDie[IOException]
 
-  /**
-   * Allows `ServerSocketChannel` to close sockets opened via `accept`
-   */
-  private[channels] def accessibleClose: IO[Exception, Unit] = close
+  override def close: IO[Exception, Unit] = super.close
 
 }
 
@@ -139,13 +136,15 @@ final class ServerSocketChannel private (override protected val channel: JServer
   final val socket: UIO[JServerSocket] =
     IO.effectTotal(channel.socket())
 
-  final def accept: Managed[IOException, Option[SocketChannel]] = {
-    val socketChannel = for {
-      javaChannel <- IO.effect(Option(channel.accept())).toManaged_
-      channel <- javaChannel.map(c => SocketChannel.fromJava(c).map(Some.apply)).getOrElse(Managed.succeed(None))
-    } yield channel
-    socketChannel.refineToOrDie[IOException]
-  }
+  /**
+   * Accepts a socket connection.
+   *
+   * Not you must manually manage the lifecyle of the returned socket, calling `close` when you're finished with it.
+   *
+   * @return None if this socket is in non-blocking mode and no connection is currently available to be accepted.
+   */
+  final def accept: IO[IOException, Option[SocketChannel]] =
+    IO.effect(Option(channel.accept()).map(new SocketChannel(_))).refineToOrDie[IOException]
 
   final val localAddress: IO[IOException, SocketAddress] =
     IO.effect(new SocketAddress(channel.getLocalAddress())).refineToOrDie[IOException]
