@@ -4,8 +4,8 @@ import java.net.URI
 import java.nio.file.attribute.UserPrincipalLookupService
 import java.nio.{file => jf}
 
-import zio.blocking.Blocking
-import zio.{IO, UIO, ZIO}
+import zio.blocking.{Blocking, effectBlocking}
+import zio.{UIO, ZIO, ZManaged}
 
 import scala.collection.JavaConverters._
 
@@ -13,8 +13,8 @@ final class FileSystem private (private val javaFileSystem: jf.FileSystem) {
 
   def provider: jf.spi.FileSystemProvider = javaFileSystem.provider()
 
-  def close: ZIO[Blocking, Exception, Unit] =
-    ZIO.accessM[Blocking](_.blocking.effectBlocking(javaFileSystem.close())).refineToOrDie[Exception]
+  private def close: ZIO[Blocking, Exception, Unit] =
+    effectBlocking(javaFileSystem.close()).refineToOrDie[Exception]
 
   def isOpen: UIO[Boolean] = UIO.effectTotal(javaFileSystem.isOpen())
 
@@ -35,26 +35,28 @@ final class FileSystem private (private val javaFileSystem: jf.FileSystem) {
   def getUserPrincipalLookupService: UserPrincipalLookupService = javaFileSystem.getUserPrincipalLookupService
 
   def newWatchService: ZIO[Blocking, Exception, WatchService] =
-    ZIO.accessM[Blocking](_.blocking.effectBlocking(WatchService.fromJava(javaFileSystem.newWatchService()))).refineToOrDie[Exception]
+    effectBlocking(WatchService.fromJava(javaFileSystem.newWatchService())).refineToOrDie[Exception]
 
 }
 
 object FileSystem {
 
+  private val close: FileSystem => ZIO[Blocking, Nothing, Unit] = _.close.orDie
+
   def fromJava(javaFileSystem: jf.FileSystem): FileSystem = new FileSystem(javaFileSystem)
 
-  def default: FileSystem = fromJava(jf.FileSystems.getDefault)
+  def default: FileSystem = new FileSystem(jf.FileSystems.getDefault)
 
-  def getFileSystem(uri: URI): IO[Exception, FileSystem] =
-    IO.effect(fromJava(jf.FileSystems.getFileSystem(uri))).refineToOrDie[Exception]
+  def getFileSystem(uri: URI): ZManaged[Blocking, Exception, FileSystem] =
+    effectBlocking(new FileSystem(jf.FileSystems.getFileSystem(uri))).refineToOrDie[Exception].toManaged(close)
 
-  def newFileSystem(uri: URI, env: (String, Any)*): IO[Exception, FileSystem] =
-    IO.effect(fromJava(jf.FileSystems.newFileSystem(uri, env.toMap.asJava))).refineToOrDie[Exception]
+  def newFileSystem(uri: URI, env: (String, Any)*): ZManaged[Blocking, Exception, FileSystem] =
+    effectBlocking(new FileSystem(jf.FileSystems.newFileSystem(uri, env.toMap.asJava))).refineToOrDie[Exception].toManaged(close)
 
-  def newFileSystem(uri: URI, env: Map[String, _], loader: ClassLoader): IO[Exception, FileSystem] =
-    IO.effect(fromJava(jf.FileSystems.newFileSystem(uri, env.asJava, loader))).refineToOrDie[Exception]
+  def newFileSystem(uri: URI, env: Map[String, _], loader: ClassLoader): ZManaged[Blocking, Exception, FileSystem] =
+    effectBlocking(new FileSystem(jf.FileSystems.newFileSystem(uri, env.asJava, loader))).refineToOrDie[Exception].toManaged(close)
 
-  def newFileSystem(path: Path, loader: ClassLoader): IO[Exception, FileSystem] =
-    IO.effect(fromJava(jf.FileSystems.newFileSystem(path.javaPath, loader))).refineToOrDie[Exception]
+  def newFileSystem(path: Path, loader: ClassLoader): ZManaged[Blocking, Exception, FileSystem] =
+    effectBlocking(new FileSystem(jf.FileSystems.newFileSystem(path.javaPath, loader))).refineToOrDie[Exception].toManaged(close)
 
 }
