@@ -2,11 +2,11 @@ package zio.nio.channels.spi
 
 import java.io.IOException
 import java.net.ProtocolFamily
-import java.nio.channels.{Channel => JChannel, DatagramChannel => JDatagramChannel}
-import java.nio.channels.spi.{SelectorProvider => JSelectorProvider}
+import java.nio.channels.{ Channel => JChannel, DatagramChannel => JDatagramChannel }
+import java.nio.channels.spi.{ SelectorProvider => JSelectorProvider }
 
-import zio.nio.channels.{Pipe, Selector, ServerSocketChannel, SocketChannel}
-import zio.{IO, Managed}
+import zio.nio.channels.{ Pipe, Selector, ServerSocketChannel, SocketChannel }
+import zio.{ IO, Managed }
 
 class SelectorProvider(private val selectorProvider: JSelectorProvider) {
 

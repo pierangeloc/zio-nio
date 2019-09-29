@@ -1,4 +1,5 @@
 package zio.nio
+
 package channels
 
 import java.nio.channels.{ ScatteringByteChannel => JScatteringByteChannel }
@@ -18,10 +19,10 @@ trait ScatteringByteChannel extends Channel {
   final def read(capacity: Int): IO[Exception, Option[Chunk[Byte]]] = {
     require(capacity > 0)
     for {
-      buffer <- Buffer.byte(capacity)
+      buffer    <- Buffer.byte(capacity)
       readCount <- readBuffer(buffer)
-      _ <- buffer.flip
-      chunk <- readCount.map(count => buffer.getChunk(count.toInt).map(Some.apply)).getOrElse(IO.succeed(None))
+      _         <- buffer.flip
+      chunk     <- readCount.map(count => buffer.getChunk(count.toInt).map(Some.apply)).getOrElse(IO.succeed(None))
     } yield chunk
   }
 

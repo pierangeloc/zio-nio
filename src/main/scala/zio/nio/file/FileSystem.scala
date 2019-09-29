@@ -2,10 +2,10 @@ package zio.nio.file
 
 import java.net.URI
 import java.nio.file.attribute.UserPrincipalLookupService
-import java.nio.{file => jf}
+import java.nio.{ file => jf }
 
-import zio.blocking.{Blocking, effectBlocking}
-import zio.{UIO, ZIO, ZManaged}
+import zio.blocking.{ Blocking, effectBlocking }
+import zio.{ UIO, ZIO, ZManaged }
 
 import scala.collection.JavaConverters._
 
@@ -28,7 +28,7 @@ final class FileSystem private (private val javaFileSystem: jf.FileSystem) {
 
   def supportedFileAttributeViews: Set[String] = javaFileSystem.supportedFileAttributeViews().asScala.toSet
 
-  def getPath(first: String, more: String*): Path = Path.fromJava(javaFileSystem.getPath(first, more:_*))
+  def getPath(first: String, more: String*): Path = Path.fromJava(javaFileSystem.getPath(first, more: _*))
 
   def getPathMatcher(syntaxAndPattern: String): jf.PathMatcher = javaFileSystem.getPathMatcher(syntaxAndPattern)
 
@@ -51,12 +51,18 @@ object FileSystem {
     effectBlocking(new FileSystem(jf.FileSystems.getFileSystem(uri))).refineToOrDie[Exception].toManaged(close)
 
   def newFileSystem(uri: URI, env: (String, Any)*): ZManaged[Blocking, Exception, FileSystem] =
-    effectBlocking(new FileSystem(jf.FileSystems.newFileSystem(uri, env.toMap.asJava))).refineToOrDie[Exception].toManaged(close)
+    effectBlocking(new FileSystem(jf.FileSystems.newFileSystem(uri, env.toMap.asJava)))
+      .refineToOrDie[Exception]
+      .toManaged(close)
 
   def newFileSystem(uri: URI, env: Map[String, _], loader: ClassLoader): ZManaged[Blocking, Exception, FileSystem] =
-    effectBlocking(new FileSystem(jf.FileSystems.newFileSystem(uri, env.asJava, loader))).refineToOrDie[Exception].toManaged(close)
+    effectBlocking(new FileSystem(jf.FileSystems.newFileSystem(uri, env.asJava, loader)))
+      .refineToOrDie[Exception]
+      .toManaged(close)
 
   def newFileSystem(path: Path, loader: ClassLoader): ZManaged[Blocking, Exception, FileSystem] =
-    effectBlocking(new FileSystem(jf.FileSystems.newFileSystem(path.javaPath, loader))).refineToOrDie[Exception].toManaged(close)
+    effectBlocking(new FileSystem(jf.FileSystems.newFileSystem(path.javaPath, loader)))
+      .refineToOrDie[Exception]
+      .toManaged(close)
 
 }

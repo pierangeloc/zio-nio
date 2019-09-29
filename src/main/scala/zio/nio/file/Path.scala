@@ -1,14 +1,13 @@
 package zio.nio.file
 
-import java.io.{File, IOError, IOException}
+import java.io.{ File, IOError, IOException }
 import java.net.URI
-import java.nio.file.{LinkOption, Paths, Path => JPath, Watchable => JWatchable}
+import java.nio.file.{ LinkOption, Paths, Path => JPath, Watchable => JWatchable }
 
 import zio.ZIO
 import zio.blocking.Blocking
 
 import scala.collection.JavaConverters._
-
 
 final class Path private (private[nio] val javaPath: JPath) extends Watchable {
 
@@ -36,9 +35,9 @@ final class Path private (private[nio] val javaPath: JPath) extends Watchable {
 
   def normalize: Path = fromJava(javaPath.normalize)
 
-  def /(other: Path): Path = fromJava(javaPath.resolve(other.javaPath))
+  def / (other: Path): Path = fromJava(javaPath.resolve(other.javaPath))
 
-  def /(other: String): Path = fromJava(javaPath.resolve(other))
+  def / (other: String): Path = fromJava(javaPath.resolve(other))
 
   def resolveSibling(other: Path): Path = fromJava(javaPath.resolveSibling(other.javaPath))
 
@@ -48,12 +47,14 @@ final class Path private (private[nio] val javaPath: JPath) extends Watchable {
     ZIO.accessM[Blocking](_.blocking.effectBlocking(javaPath.toUri)).refineToOrDie[IOError]
 
   def toAbsolutePath: ZIO[Blocking, IOError, Path] =
-    ZIO.accessM[Blocking](_.blocking.effectBlocking(fromJava(javaPath.toAbsolutePath)))
-    .refineToOrDie[IOError]
+    ZIO
+      .accessM[Blocking](_.blocking.effectBlocking(fromJava(javaPath.toAbsolutePath)))
+      .refineToOrDie[IOError]
 
   def toRealPath(linkOptions: LinkOption*): ZIO[Blocking, IOException, Path] =
-    ZIO.accessM[Blocking](_.blocking.effectBlocking(fromJava(javaPath.toRealPath(linkOptions:_*))))
-    .refineToOrDie[IOException]
+    ZIO
+      .accessM[Blocking](_.blocking.effectBlocking(fromJava(javaPath.toRealPath(linkOptions: _*))))
+      .refineToOrDie[IOException]
 
   def toFile: File = javaPath.toFile
 
@@ -71,7 +72,7 @@ final class Path private (private[nio] val javaPath: JPath) extends Watchable {
 
 object Path {
 
-  def apply(first: String, more: String*): Path = new Path(Paths.get(first, more:_*))
+  def apply(first: String, more: String*): Path = new Path(Paths.get(first, more: _*))
 
   def apply(uri: URI): Path = new Path(Paths.get(uri))
 

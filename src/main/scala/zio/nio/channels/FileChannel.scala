@@ -1,15 +1,15 @@
 package zio.nio.channels
 
 import java.io.IOException
-import java.nio.channels.{FileChannel => JFileChannel}
+import java.nio.channels.{ FileChannel => JFileChannel }
 import java.nio.file.OpenOption
 import java.nio.file.attribute.FileAttribute
 
 import com.github.ghik.silencer.silent
-import zio.blocking.{Blocking, _}
+import zio.blocking.{ Blocking, _ }
 import zio.nio.file.Path
-import zio.nio.{ByteBuffer, MappedByteBuffer}
-import zio.{IO, ZIO, ZManaged}
+import zio.nio.{ ByteBuffer, MappedByteBuffer }
+import zio.{ IO, ZIO, ZManaged }
 
 import scala.collection.JavaConverters._
 
@@ -19,7 +19,8 @@ final class FileChannel private[channels] (override protected[channels] val chan
 
   def position: IO[IOException, Long] = IO.effect(channel.position()).refineToOrDie[IOException]
 
-  def postion(newPosition: Long): IO[Exception, Unit] = IO.effect(channel.position(newPosition)).unit.refineToOrDie[Exception]
+  def postion(newPosition: Long): IO[Exception, Unit] =
+    IO.effect(channel.position(newPosition)).unit.refineToOrDie[Exception]
 
   def size: IO[IOException, Long] = IO.effect(channel.size()).refineToOrDie[IOException]
 
@@ -36,11 +37,13 @@ final class FileChannel private[channels] (override protected[channels] val chan
     effectBlocking(channel.transferFrom(src.channel, position, count)).refineToOrDie[Exception]
 
   def read(dst: ByteBuffer, position: Long): ZIO[Blocking, Exception, Int] =
-    dst.withJavaBuffer[Blocking, Throwable, Int](buffer => effectBlocking(channel.read(buffer, position)))
+    dst
+      .withJavaBuffer[Blocking, Throwable, Int](buffer => effectBlocking(channel.read(buffer, position)))
       .refineToOrDie[Exception]
 
   def write(src: ByteBuffer, position: Long): ZIO[Blocking, Exception, Int] =
-    src.withJavaBuffer[Blocking, Throwable, Int](buffer => effectBlocking(channel.write(buffer, position)))
+    src
+      .withJavaBuffer[Blocking, Throwable, Int](buffer => effectBlocking(channel.write(buffer, position)))
       .refineToOrDie[Exception]
 
   def map(mode: JFileChannel.MapMode, position: Long, size: Long): ZIO[Blocking, Exception, MappedByteBuffer] =
@@ -67,17 +70,23 @@ final class FileChannel private[channels] (override protected[channels] val chan
 object FileChannel {
 
   @silent
-  def open(path: Path, options: Set[_ <: OpenOption], attrs: FileAttribute[_]*): ZManaged[Blocking, Exception, FileChannel] =
-    IO.effect(new FileChannel(JFileChannel.open(path.javaPath, options.asJava, attrs: _*))).refineToOrDie[Exception]
-    .toManaged(_.close.orDie)
+  def open(
+    path: Path,
+    options: Set[_ <: OpenOption],
+    attrs: FileAttribute[_]*
+  ): ZManaged[Blocking, Exception, FileChannel] =
+    IO.effect(new FileChannel(JFileChannel.open(path.javaPath, options.asJava, attrs: _*)))
+      .refineToOrDie[Exception]
+      .toManaged(_.close.orDie)
 
   def open(path: Path, options: OpenOption*): ZManaged[Blocking, Exception, FileChannel] =
-    effectBlocking(new FileChannel(JFileChannel.open(path.javaPath, options: _*))).refineToOrDie[Exception]
-    .toManaged(_.close.orDie)
+    effectBlocking(new FileChannel(JFileChannel.open(path.javaPath, options: _*)))
+      .refineToOrDie[Exception]
+      .toManaged(_.close.orDie)
 
   def fromJava(javaFileChannel: JFileChannel): ZManaged[Blocking, Nothing, FileChannel] =
     effectBlocking(new FileChannel(javaFileChannel)).orDie
-    .toManaged(_.close.orDie)
+      .toManaged(_.close.orDie)
 
   type MapMode = JFileChannel.MapMode
 

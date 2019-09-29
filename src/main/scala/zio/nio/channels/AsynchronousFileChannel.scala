@@ -1,7 +1,7 @@
 package zio.nio.channels
 
 import java.io.IOException
-import java.nio.channels.{AsynchronousFileChannel => JAsynchronousFileChannel, FileLock => JFileLock}
+import java.nio.channels.{ AsynchronousFileChannel => JAsynchronousFileChannel, FileLock => JFileLock }
 import java.nio.file.attribute.FileAttribute
 import java.nio.file.OpenOption
 import java.util.concurrent.ExecutorService
@@ -9,8 +9,8 @@ import java.util.concurrent.ExecutorService
 import com.github.ghik.silencer.silent
 import zio.blocking.Blocking
 import zio.nio.file.Path
-import zio.nio.{Buffer, ByteBuffer}
-import zio.{Chunk, IO, ZIO, ZManaged }
+import zio.nio.{ Buffer, ByteBuffer }
+import zio.{ Chunk, IO, ZIO, ZManaged }
 
 import scala.collection.JavaConverters._
 
@@ -65,7 +65,9 @@ object AsynchronousFileChannel {
   def open(file: Path, options: OpenOption*): ZManaged[Blocking, Exception, AsynchronousFileChannel] = {
     val open = ZIO
       .accessM[Blocking] {
-        _.blocking.effectBlocking(new AsynchronousFileChannel(JAsynchronousFileChannel.open(file.javaPath, options: _*)))
+        _.blocking.effectBlocking(
+          new AsynchronousFileChannel(JAsynchronousFileChannel.open(file.javaPath, options: _*))
+        )
       }
       .refineToOrDie[Exception]
 

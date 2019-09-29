@@ -4,12 +4,13 @@ import zio.nio.BaseSpec
 import zio.test.Assertion._
 import zio.test._
 
-object PathSuite extends BaseSpec(
-  suite("PathSpec")(
-    test("Path construction") {
-      val p = Path("a", "b") / "c/d"
-      val elements = p.elements.map(_.toString)
-      assert(elements, equalTo(List("a", "b", "c", "d")))
-    }
-  )
-)
+object PathSuite
+    extends BaseSpec(
+      suite("PathSpec")(
+        test("Path construction") {
+          val p        = Path("a", "b") / "c/d"
+          val elements = p.elements.map(_.toString)
+          assert(elements, equalTo(List("a", "b", "c", "d")))
+        }
+      )
+    )

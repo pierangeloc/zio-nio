@@ -1,14 +1,18 @@
 package zio.nio.channels
 
 import java.io.IOException
-import java.net.{ServerSocket => JServerSocket, Socket => JSocket}
-import java.nio.channels.{SelectableChannel => JSelectableChannel, ServerSocketChannel => JServerSocketChannel, SocketChannel => JSocketChannel}
-import java.nio.{ByteBuffer => JByteBuffer}
+import java.net.{ ServerSocket => JServerSocket, Socket => JSocket }
+import java.nio.channels.{
+  SelectableChannel => JSelectableChannel,
+  ServerSocketChannel => JServerSocketChannel,
+  SocketChannel => JSocketChannel
+}
+import java.nio.{ ByteBuffer => JByteBuffer }
 
 import zio.nio.channels.SelectionKey.Operation
 import zio.nio.channels.spi.SelectorProvider
-import zio.nio.{Buffer, SocketAddress, SocketOption}
-import zio.{IO, Managed, UIO}
+import zio.nio.{ Buffer, SocketAddress, SocketOption }
+import zio.{ IO, Managed, UIO }
 
 trait SelectableChannel extends Channel {
 
@@ -122,7 +126,8 @@ object SocketChannel {
 
 }
 
-final class ServerSocketChannel private (override protected val channel: JServerSocketChannel) extends SelectableChannel {
+final class ServerSocketChannel private (override protected val channel: JServerSocketChannel)
+    extends SelectableChannel {
 
   final def bind(local: SocketAddress): IO[IOException, Unit] =
     IO.effect(channel.bind(local.jSocketAddress)).refineToOrDie[IOException].unit

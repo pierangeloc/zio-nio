@@ -1,14 +1,20 @@
 package zio.nio.file
 
 import java.io.IOException
-import java.nio.file.{ClosedWatchServiceException, WatchEvent, Watchable => JWatchable, WatchKey => JWatchKey, WatchService => JWatchService}
+import java.nio.file.{
+  ClosedWatchServiceException,
+  WatchEvent,
+  Watchable => JWatchable,
+  WatchKey => JWatchKey,
+  WatchService => JWatchService
+}
 import java.util.concurrent.TimeUnit
 
 import zio.blocking.Blocking
 import zio.duration.Duration
 
 import scala.collection.JavaConverters._
-import zio.{IO, UIO, ZIO}
+import zio.{ IO, UIO, ZIO }
 
 trait Watchable {
 
@@ -17,9 +23,13 @@ trait Watchable {
   final def register(watcher: WatchService, events: WatchEvent.Kind[_]*): IO[Exception, WatchKey] =
     IO.effect(new WatchKey(javaWatchable.register(watcher.javaWatchService, events: _*))).refineToOrDie[Exception]
 
-  final def register(watcher: WatchService, events: Iterable[WatchEvent.Kind[_]], modifiers: WatchEvent.Modifier*): IO[Exception, WatchKey] =
-    IO.effect(new WatchKey(javaWatchable.register(watcher.javaWatchService, events.toArray, modifiers:_*)))
-    .refineToOrDie[Exception]
+  final def register(
+    watcher: WatchService,
+    events: Iterable[WatchEvent.Kind[_]],
+    modifiers: WatchEvent.Modifier*
+  ): IO[Exception, WatchKey] =
+    IO.effect(new WatchKey(javaWatchable.register(watcher.javaWatchService, events.toArray, modifiers: _*)))
+      .refineToOrDie[Exception]
 
 }
 
@@ -44,11 +54,12 @@ final class WatchService private (private[file] val javaWatchService: JWatchServ
 
   def poll(timeout: Duration): IO[Exception, Option[WatchKey]] =
     IO.effect(Option(javaWatchService.poll(timeout.toNanos, TimeUnit.NANOSECONDS)).map(new WatchKey(_)))
-    .refineToOrDie[Exception]
+      .refineToOrDie[Exception]
 
   def take: ZIO[Blocking, Exception, WatchKey] =
-    ZIO.accessM[Blocking](_.blocking.effectBlocking(new WatchKey(javaWatchService.take())))
-    .refineToOrDie[Exception]
+    ZIO
+      .accessM[Blocking](_.blocking.effectBlocking(new WatchKey(javaWatchService.take())))
+      .refineToOrDie[Exception]
 
 }
 

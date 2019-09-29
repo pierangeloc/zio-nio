@@ -3,11 +3,11 @@ package zio.nio.channels
 import java.nio.charset.StandardCharsets
 import java.nio.file.StandardOpenOption
 
-import zio.nio.file.{Files, Path}
+import zio.nio.file.{ Files, Path }
 import zio.test._
 import zio.test.Assertion._
-import zio.nio.{BaseSpec, Buffer}
-import zio.{Chunk, ZIO}
+import zio.nio.{ BaseSpec, Buffer }
+import zio.{ Chunk, ZIO }
 
 import scala.io.Source
 
@@ -46,15 +46,14 @@ object FileChannelSpec
               StandardOpenOption.CREATE,
               StandardOpenOption.WRITE
             )
-            .use {
-              channel =>
-                for {
-                  buffer <- Buffer.byte(Chunk.fromArray("Hello World".getBytes))
-                  _      <- channel.writeBuffer(buffer, 0)
-                  path   <- ZIO.effectTotal(Path("src/test/resources/async_file_write_test.txt"))
-                  result <- ZIO.effect(Source.fromFile(path.toFile).getLines.toSeq)
-                  _      <- Files.delete(path)
-                } yield assert(result.size == 1 && result.head == "Hello World", isTrue)
+            .use { channel =>
+              for {
+                buffer <- Buffer.byte(Chunk.fromArray("Hello World".getBytes))
+                _      <- channel.writeBuffer(buffer, 0)
+                path   <- ZIO.effectTotal(Path("src/test/resources/async_file_write_test.txt"))
+                result <- ZIO.effect(Source.fromFile(path.toFile).getLines.toSeq)
+                _      <- Files.delete(path)
+              } yield assert(result.size == 1 && result.head == "Hello World", isTrue)
             }
         },
         testM("memory mapped buffer") {
