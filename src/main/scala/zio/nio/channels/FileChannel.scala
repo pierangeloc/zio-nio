@@ -5,12 +5,8 @@ import java.nio.channels.{FileChannel => JFileChannel}
 import java.nio.file.OpenOption
 import java.nio.file.attribute.FileAttribute
 
-import zio.blocking._
 import com.github.ghik.silencer.silent
-
-import scala.collection.JavaConverters._
-import zio.{IO, Managed, ZIO}
-import zio.blocking.Blocking
+import zio.blocking.{Blocking, _}
 import zio.nio.file.Path
 import zio.nio.{ByteBuffer, MappedByteBuffer}
 import zio.{IO, ZIO, ZManaged}

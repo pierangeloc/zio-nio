@@ -1,52 +1,52 @@
 package zio.nio.channels
 
-import java.io.{ File, RandomAccessFile }
+import java.nio.file.StandardOpenOption
+
+import zio.nio.file.{Files, Path}
+import zio.nio.{BaseSpec, Buffer}
+import zio.test.Assertion._
+import zio.test._
+import zio.{Chunk, IO}
 
 import scala.io.Source
-
-import zio.test._
-import zio.test.Assertion._
-import zio.nio.{ BaseSpec, Buffer }
-import zio.{ Chunk, IO, ZIO }
 
 object ScatterGatherChannelSpec
     extends BaseSpec(
       suite("ScatterGatherChannelSpec")(
         testM("scattering read") {
-          for {
-            raf         <- ZIO.effectTotal(new RandomAccessFile("src/test/resources/scattering_read_test.txt", "r"))
-            fileChannel = raf.getChannel
-            readLine = (buffer: Buffer[Byte]) =>
-              for {
-                _     <- buffer.flip
-                array <- buffer.array
-                text  = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
-              } yield text
-            buffs   <- IO.collectAll(Seq(Buffer.byte(5), Buffer.byte(5)))
-            channel = new FileChannel(fileChannel)
-            _       <- channel.readBuffer(buffs)
-            list    <- IO.collectAll(buffs.map(readLine))
-            _       <- channel.close
-          } yield assert(list == "Hello" :: "World" :: Nil, isTrue)
+          val testFilePath = Path("src") / "test" / "resources" / "scattering_read_test.txt"
+          def readLine(buffer: Buffer[Byte]) =
+            for {
+              _ <- buffer.flip
+              chunk <- buffer.getChunk()
+            } yield chunk.takeWhile(_ != 10).map(_.toChar).mkString.trim
+          FileChannel.open(testFilePath, StandardOpenOption.READ).use { channel =>
+            for {
+              buffs <- IO.collectAll(Seq(Buffer.byte(5), Buffer.byte(5)))
+              _ <- channel.readBuffer(buffs)
+              list <- IO.traverse(buffs)(readLine)
+            } yield assert(list == "Hello" :: "World" :: Nil, isTrue)
+          }
         },
         testM("gathering write") {
-          for {
-            file        <- ZIO.effect(new File("src/test/resources/gathering_write_test.txt"))
-            raf         = new RandomAccessFile(file, "rw")
-            fileChannel = raf.getChannel
-
-            buffs <- IO.collectAll(
-                      Seq(
-                        Buffer.byte(Chunk.fromArray("Hello".getBytes)),
-                        Buffer.byte(Chunk.fromArray("World".getBytes))
-                      )
-                    )
-            channel = new FileChannel(fileChannel)
-            _       <- channel.writeBuffer(buffs)
-            _       <- channel.close
-            result  = Source.fromFile(file).getLines.toSeq
-            _       = file.delete()
-          } yield assert(result == Seq("HelloWorld"), isTrue)
+          val testFilePath = Path("target") / "test-data" / "gathering_write_test.txt"
+          val openChannel = for {
+            _ <- Files.createDirectories(testFilePath.parent.get).toManaged_
+            channel <- FileChannel.open(testFilePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE)
+          } yield channel
+          openChannel.use { channel =>
+            for {
+              buffs <- IO.collectAll(
+                Seq(
+                  Buffer.byte(Chunk.fromArray("Hello".getBytes)),
+                  Buffer.byte(Chunk.fromArray("World".getBytes))
+                )
+              )
+              _ <- channel.writeBuffer(buffs)
+              result <- IO.effect(Source.fromFile(testFilePath.toFile).getLines.toSeq)
+              _ <- Files.delete(testFilePath)
+            } yield assert(result == Seq("HelloWorld"), isTrue)
+          }
         }
       )
     )
